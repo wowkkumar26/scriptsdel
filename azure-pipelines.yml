@@ -1,0 +1,55 @@
+# Pipeline for Creating a Feature Branch
+parameters:
+- name: changenumber
+  displayName: "Change Number "
+  type: string
+  default: ''
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: Infa-scripts-delete
+ 
+steps:
+- script: |
+    echo "Configuring Git user settings..."
+    
+    # Configure Git user
+    git config --global user.name "${{ variables.GIT_USER_NAME }}"
+    git config --global user.email "${{ variables.GIT_USER_EMAIL }}"
+
+    echo "Creating a feature branch for Change Number: ${{ parameters.changenumber }}"
+
+    # Clean workspace 
+    echo "Cleaning up the workspace..."
+    rm -rf .git repo-directory
+
+   
+    # Validate that the Change Number is provided
+    if [ -z "${{ parameters.changenumber }}" ]; then
+      echo "Change Number parameter is missing. Aborting."
+      exit 1
+    fi
+    
+       
+    # Clone the repository 
+    git clone https://$(GITHUBTOKEN)@github.com/$REPONAME.git repo-directory || exit 1
+    cd repo-directory
+
+    # Create the feature branch
+    branch_name="feature/${{ parameters.changenumber }}-TEST001"
+    echo "Creating branch: $branch_name"
+    git checkout -b "$branch_name"
+
+    # Push the branch to the remote repository
+    echo "Pushing the branch to the remote repository..."
+    git push origin "$branch_name"
+
+    echo "Feature branch '$branch_name' created and pushed successfully."
+  displayName: 'Create Feature Branch'
+  env:
+    GITHUBTOKEN: $(GITHUBTOKEN)
